@@ -1,0 +1,12 @@
+{
+  "name": "fluentxverse-student-source",
+  "private": true,
+  "description": "SolidJS student app for tutor discovery, lesson booking, live classrooms, and private learning workflows.",
+  "scripts": {
+    "setup": "npm --prefix fluentxverse-student-solid-prototype ci --workspaces=false",
+    "dev": "npm --prefix fluentxverse-student-solid-prototype run dev",
+    "build": "npm --prefix fluentxverse-student-solid-prototype run build",
+    "preview": "npm --prefix fluentxverse-student-solid-prototype run preview",
+    "test": "cd fluentxverse-student-solid-prototype && bun test tests/unit.test.ts tests/productionEndpoints.test.ts tests/lessonPassVault.test.ts"
+  }
+}
