@@ -1,3 +1,5 @@
+import { learningCategoryLabel } from '../../../shared/learningTerminology';
+import { FLUENT_KIDS_NAME, fluentKidsClassroomMaterials, getFluentKidsLessonHref } from '../../../shared/fluentKids/curriculum';
 import ClassroomChatPanels, { ClassroomChatTools } from '../../../shared/ui/ClassroomChatPanels';
 import { createSignal, createMemo, createEffect, on, onCleanup, untrack, useContext, splitProps, mergeProps, type Accessor, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -26,7 +28,6 @@ import { materialFrameUrl } from '../utils/materialFrameUrl';
 import { ArrowLeft, CalendarDays, Check, ChevronDown, ChevronUp, FileText, History, Info, Mic, MicOff, MoreHorizontal, Paperclip, Pencil, PhoneOff, Plus, RefreshCw, Send, Settings, ShieldCheck, Trash2, Video, VideoOff, X } from "lucide-solid";
 import '../../../shared/ui/classroom-student-base.css';
 import '../../../shared/ui/classroom-layout.css';
-import ClassroomRecordingFlag from '../../../shared/ui/ClassroomRecordingFlag';
 const classroomArt = (name: string, className = '') => <img class={'classroom-art ' + className} src={'/assets/img/home-icons/' + name + (name === 'dispatch' ? '-v1.png' : '-v1.webp')} alt=""/>;
 // Conversational Skills lesson interface for viewing
 interface ConversationalLesson {
@@ -465,7 +466,6 @@ const ClassroomPage = (_props0: ClassroomPageProps) => {
     const [activityLogs, setActivityLogs] = createSignal<ClassroomActivityLogData[]>([]);
     const [isSettingsOpen, setIsSettingsOpen] = createSignal(false);
     const [recordingAvailable, setRecordingAvailable] = createSignal(false);
-    const [recordingStatus, setRecordingStatus] = createSignal('');
     const [recordingRevision, setRecordingRevision] = createSignal(0);
     const [audioInputDevices, setAudioInputDevices] = createSignal<MediaDeviceInfo[]>([]);
     const [videoInputDevices, setVideoInputDevices] = createSignal<MediaDeviceInfo[]>([]);
@@ -496,6 +496,7 @@ const ClassroomPage = (_props0: ClassroomPageProps) => {
     const courses = [
         { id: 'conversational-skills', name: 'Conversational Skills', icon: 'community', description: 'Conversation lessons for practical speaking practice.' },
         { id: 'business-english', name: 'Business English', icon: 'business', description: 'Workplace English lessons and professional scenarios.' },
+        { id: 'young-learners', name: FLUENT_KIDS_NAME, icon: 'story', description: 'Illustrated speaking lessons for ages 6–12.' },
         { id: 'daily-dispatch', name: 'Daily Dispatch', icon: 'dispatch', description: 'News-based reading and discussion material.' },
     ];
     const selectedCourseOption = createMemo(() => courses.find(course => course.id === selectedCourse()) || null);
@@ -617,7 +618,7 @@ const ClassroomPage = (_props0: ClassroomPageProps) => {
             return `/materials/conversational-skills/${lessonId}`;
         }
         if (courseId === 'young-learners') {
-            return `/materials/young-learners/lesson/${lessonId}`;
+            return getFluentKidsLessonHref(lessonId) ?? `/young-learners/lesson/${encodeURIComponent(lessonId)}`;
         }
         if (courseId === 'business-english') {
             const result = await lessonApi.getLessonMaterialView(lessonId);
@@ -661,6 +662,10 @@ const ClassroomPage = (_props0: ClassroomPageProps) => {
         setLoadingMaterials(false);
         if (!courseId || courseId === 'daily-dispatch')
             return;
+        if (courseId === 'young-learners') {
+            setAvailableLessons(fluentKidsClassroomMaterials.map(transformLessonMaterialToLesson));
+            return;
+        }
         setLoadingMaterials(true);
         try {
             const result = isLessonMaterialCourse(courseId)
@@ -1483,8 +1488,7 @@ const ClassroomPage = (_props0: ClassroomPageProps) => {
         {lessonStart.wrapUp && <div class="classroom-start-wait" role="status">{lessonStart.wrapUpMessage}</div>}
 
         {/* Video Area */}
-        <ClassroomRecordingNotice socket={socketInstance()} provider={mediaProvider()} openRevision={recordingRevision()} onAvailabilityChange={setRecordingAvailable} autoPrompt={false} onStatusChange={setRecordingStatus}/>
-        <ClassroomRecordingFlag available={recordingAvailable()} status={recordingStatus()} onPreferences={() => setRecordingRevision(value => value + 1)}/>
+        <ClassroomRecordingNotice socket={socketInstance()} provider={mediaProvider()} openRevision={recordingRevision()} onAvailabilityChange={setRecordingAvailable} autoPrompt={false}/>
         <div class="video-section" tabIndex={0} aria-label="Lesson video and call controls">
           {/* Main Video */}
           <div class="video-main">
@@ -1736,7 +1740,7 @@ const ClassroomPage = (_props0: ClassroomPageProps) => {
               Go to Selection Tab
             </button>
             <div class="dispatch-view-meta">
-              <span class="dispatch-view-category">{viewingDispatchArticle().category}</span>
+              <span class="dispatch-view-category">{learningCategoryLabel(viewingDispatchArticle().category)}</span>
               <span class="dispatch-view-date">
                 {new Date(`${dispatchPostDate(viewingDispatchArticle())}T00:00:00Z`).toLocaleDateString('en-US', {
                 timeZone: 'UTC',
@@ -1916,7 +1920,7 @@ const ClassroomPage = (_props0: ClassroomPageProps) => {
                     setLessonViewUrl(null);
                     setShowLessonRequest(false);
                 }}/>)}
-                      {showSelectedCourseDetails() && selectedCourse() !== 'daily-dispatch' && (<CurriculumMaterialPicker loading={loadingMaterials()} currentId={chosenLesson()?.courseId === selectedCourse() ? chosenLesson().lessonId : undefined} materials={availableLessons().map(item => ({
+                      {showSelectedCourseDetails() && selectedCourse() !== 'daily-dispatch' && (<CurriculumMaterialPicker groupLabel={selectedCourse() === 'young-learners' ? 'Unit' : 'Chapter'} loading={loadingMaterials()} currentId={chosenLesson()?.courseId === selectedCourse() ? chosenLesson().lessonId : undefined} materials={availableLessons().map(item => ({
                     id: item.id, title: item.title, level: getLevelNumber(item),
                     chapter: getChapterNumber(item), lesson: getLessonNumber(item),
                     goal: item.lessonData?.header?.goalText || ''
